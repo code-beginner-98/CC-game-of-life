@@ -6,10 +6,10 @@ struct GameState {
 impl GameState {
     fn init() -> GameState{
         /// initialize a limited playing field (currently 2D)
-        /// of 10 spaces, all empty.
+        /// of 10 spaces.
         return GameState {
             generation: 0,
-            field: [0; 10]
+            field: [1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
         }
     }
 
