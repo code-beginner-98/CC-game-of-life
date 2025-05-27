@@ -1,0 +1,23 @@
+# Ignore the target directory (compiled artifacts)
+target/
+
+# Ignore backup and temporary files
+**/*.rs.bk
+*.swp
+*.swo
+*.tmp
+
+# Ignore logs and dumps
+*.log
+
+# Ignore IDE/editor files
+.idea/
+.vscode/
+*.iml
+
+# Ignore by OS
+# macOS
+.DS_Store
+# Windows
+Thumbs.db
+
