@@ -1,6 +1,6 @@
 pub struct GameState {
     generation: u8,
-    pub field: [usize; 10]
+    pub field: Vec<Vec<usize>>
 }
 
 impl GameState {
@@ -9,7 +9,7 @@ impl GameState {
     pub fn init() -> GameState{
         return GameState {
             generation: 0,
-            field: [1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
+            field: vec![vec![0; 10];10]
         }
     }
 
@@ -27,37 +27,42 @@ impl GameState {
         
         // calculate amount of neighbours
         // for all cells
-        let mut cell_neighbours: [u8; 10] = [0; 10];
-        let mut field_new = [0; 10];
-        let mut n = 0;
-        for _ in self.field {
-            cell_neighbours[n] = if n == 0 {
-                (self.field[self.field.len()-1] + self.field[n+1]) as u8
-            } else if n == self.field.len()-1 {
-                (self.field[n-1] + self.field[self.field.len()-1]) as u8
-            } else {
-                (self.field[n-1] + self.field[n+1]) as u8
-            };
-            n += 1;
+        let width = self.field.len();
+        let height = self.field[0].len();
+        let mut cell_neighbours = vec![vec![0; height]; width];
+        for i in 0..width {
+            for j in 0..height {
+                let mut sum = 0;
+                let neighbours: [isize; 3] = [-1, 0, 1];
+                for di in neighbours {
+                    for dj in neighbours{
+                        // skips middle cell, wrap around vector edges
+                        // with way to many casts, wth.
+                        if di == 0 && dj == 0 {
+                            continue
+                        }
+                        let cell_i = (i as isize + di + width as isize) % width as isize;
+                        let cell_j = (j as isize + dj + height as isize) % height as isize;
+                        sum += self.field[cell_i as usize][cell_j as usize];
+                    }
+                }
+                cell_neighbours[i][j] = sum;
+            }
         }
         // print!("nbrs: {:?}", cell_neighbours);
+
         // fill new field
-        n = 0;
-        for i in cell_neighbours {
-            if i == 2 {
-                if self.field[n] == 0 {
-                    field_new[n] = 1;
+        let mut field_new = vec![vec![0; height]; width];
+        for i in 0..width {
+            for j in 0..height {
+                if (cell_neighbours[i][j] <2) | (cell_neighbours[i][j] >3) {    
+                    field_new[i][j] = 0;
+                } else if cell_neighbours[i][j] == 2 && self.field[i][j] == 0 {
+                    field_new[i][j] = 0;
+                } else {
+                    field_new[i][j] = 1;
                 }
-                else {
-                    field_new[n] = 0;
-                }
-            } else if i == 1 {
-                field_new[n] = self.field[n];
             }
-            else {
-                field_new[n] = 0;
-            }
-            n += 1;
         }
         // print!("new: {:?}", field_new);
 
@@ -66,6 +71,11 @@ impl GameState {
     }
 
     pub fn print(&self) {
-        println!("state: {:?}", self.field)
+        let width = self.field.len();
+        // let height = self.field[0].len();
+        print!("State:\n");
+        for i in 0..width {
+            print!("{:?}\n", self.field[i]);
+        }
     }
 }
