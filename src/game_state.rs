@@ -13,10 +13,6 @@ impl GameState {
         }
     }
 
-    /// TO DO: increase rendering space
-    pub fn add_space(){
-    }
-
     /// Calculate future value of each cell and assign
     /// new value to field of GameState.
     /// Rules:
