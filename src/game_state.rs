@@ -4,13 +4,27 @@ pub struct GameState {
 }
 
 impl GameState {
-    /// initialize a limited playing field (currently 2D)
-    /// of 10 spaces.
+    /// initialize a limited playing field of 10 by 10 empty spaces.
     pub fn init() -> GameState{
         return GameState {
             generation: 0,
             field: vec![vec![0; 10];10]
         }
+    }
+
+    pub fn init_glider() -> GameState {
+        return GameState { generation: 0, field: vec![
+            vec![0; 10],
+            vec![0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+            vec![0, 0, 1, 1, 0, 0, 0, 0, 0, 0],
+            vec![0, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+            vec![0; 10],
+            vec![0; 10],
+            vec![0; 10],
+            vec![0; 10],
+            vec![0; 10],
+            vec![0; 10],
+        ] }
     }
 
     /// Calculate future value of each cell and assign
