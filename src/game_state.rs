@@ -1,5 +1,4 @@
 pub struct GameState {
-    generation: u8,
     pub field: Vec<Vec<usize>>
 }
 
@@ -7,24 +6,41 @@ impl GameState {
     /// initialize a limited playing field of 10 by 10 empty spaces.
     pub fn init() -> GameState{
         return GameState {
-            generation: 0,
             field: vec![vec![0; 10];10]
         }
     }
 
     pub fn init_glider() -> GameState {
-        return GameState { generation: 0, field: vec![
-            vec![0; 10],
-            vec![0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-            vec![0, 0, 1, 1, 0, 0, 0, 0, 0, 0],
-            vec![0, 1, 1, 0, 0, 0, 0, 0, 0, 0],
-            vec![0; 10],
-            vec![0; 10],
-            vec![0; 10],
-            vec![0; 10],
-            vec![0; 10],
-            vec![0; 10],
-        ] }
+        return GameState {
+            field: vec![
+                vec![0; 10],
+                vec![0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+                vec![0, 0, 1, 1, 0, 0, 0, 0, 0, 0],
+                vec![0, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+                vec![0; 10],
+                vec![0; 10],
+                vec![0; 10],
+                vec![0; 10],
+                vec![0; 10],
+                vec![0; 10],
+            ]
+        }
+    }
+    
+    pub fn init_rnd() -> GameState {
+        use rand;
+        let size = 40;
+        let mut rnd_vec = vec![vec![0; size]; size];
+        for i in 0..size {
+            for j in 0..size {
+                let rnd = rand::random_range(0..=1);
+                print!("{}", rnd);
+                rnd_vec[i][j] = rnd;
+            }
+        }
+        return GameState {
+            field: rnd_vec
+        }
     }
 
     /// Calculate future value of each cell and assign
@@ -76,16 +92,21 @@ impl GameState {
         }
         // print!("new: {:?}", field_new);
 
-        self.generation += 1;
         self.field = field_new;
     }
 
     pub fn print(&self) {
-        let width = self.field.len();
-        // let height = self.field[0].len();
-        print!("State:\n");
-        for i in 0..width {
-            print!("{:?}\n", self.field[i]);
+        print!("\x1b[H"); // move cursor to top left
+        for row in &self.field {
+            for &cell in row {
+                let symbol = if cell == 1 {
+                    "██"
+                } else {
+                    "  "
+                    };
+                print!("{}", symbol);
+            }
+            println!();
         }
     }
 }
