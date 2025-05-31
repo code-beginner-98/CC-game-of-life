@@ -4,43 +4,10 @@ pub struct GameState {
 
 impl GameState {
     /// initialize a limited playing field of 10 by 10 empty spaces.
-    pub fn init() -> GameState{
-        GameState {
-            field: vec![vec![0; 10];10]
-        }
-    }
-
-    pub fn init_glider() -> GameState {
-        GameState {
-            field: vec![
-                vec![0; 10],
-                vec![0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-                vec![0, 0, 1, 1, 0, 0, 0, 0, 0, 0],
-                vec![0, 1, 1, 0, 0, 0, 0, 0, 0, 0],
-                vec![0; 10],
-                vec![0; 10],
-                vec![0; 10],
-                vec![0; 10],
-                vec![0; 10],
-                vec![0; 10],
-            ]
-        }
-    }
     
-    pub fn init_rnd() -> GameState {
-        use rand;
-        let size = 40;
-        let mut rnd_vec = vec![vec![0; size]; size];
-        for i in 0..size {
-            for j in 0..size {
-                let rnd = rand::random_range(0..=1);
-                print!("{}", rnd);
-                rnd_vec[i][j] = rnd;
-            }
-        }
-        GameState {
-            field: rnd_vec
-        }
+
+    pub fn from_field(field: Vec<Vec<u8>>) -> Self {
+        GameState { field: field }
     }
 
     /// Calculate future value of each cell and assign
@@ -50,9 +17,28 @@ impl GameState {
     /// 3 Neighbours: become 1,
     /// 2 Neighbours: stay the same
     pub fn update(&mut self) {
-        
-        // calculate amount of neighbours
-        // for all cells
+        let cell_neighbours = self.calc_neighbours();
+        // fill new field
+        let width = self.field.len();
+        let height = self.field[0].len();
+        let mut field_new = vec![vec![0; height]; width];
+        for i in 0..width {
+            for j in 0..height {
+                if (cell_neighbours[i][j] <2) | (cell_neighbours[i][j] >3) {    
+                    field_new[i][j] = 0;
+                } else if cell_neighbours[i][j] == 2 && self.field[i][j] == 0 {
+                    field_new[i][j] = 0;
+                } else {
+                    field_new[i][j] = 1;
+                }
+            }
+        }
+        // print!("new: {:?}", field_new);
+        self.field = field_new;
+    }
+
+    /// calculate amount of neighbours for all cells inside self.field
+    pub fn calc_neighbours(&self) -> Vec<Vec<u8>> {
         let width = self.field.len();
         let height = self.field[0].len();
         let mut cell_neighbours = vec![vec![0; height]; width];
@@ -76,25 +62,10 @@ impl GameState {
             }
         }
         // print!("nbrs: {:?}", cell_neighbours);
-
-        // fill new field
-        let mut field_new = vec![vec![0; height]; width];
-        for i in 0..width {
-            for j in 0..height {
-                if (cell_neighbours[i][j] <2) | (cell_neighbours[i][j] >3) {    
-                    field_new[i][j] = 0;
-                } else if cell_neighbours[i][j] == 2 && self.field[i][j] == 0 {
-                    field_new[i][j] = 0;
-                } else {
-                    field_new[i][j] = 1;
-                }
-            }
-        }
-        // print!("new: {:?}", field_new);
-
-        self.field = field_new;
+        cell_neighbours
     }
 
+    /// prints the current game state field vector using "██" and "  ".
     pub fn print(&self) {
         print!("\x1b[H"); // move cursor to top left
         for row in &self.field {
@@ -108,5 +79,34 @@ impl GameState {
             }
             println!();
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_test_state() -> GameState{
+        let field = vec![
+            vec![1,1,0,0],
+            vec![1,0,0,0],
+            vec![0,0,0,0],
+            vec![0,0,0,0],
+        ];
+        GameState { field: field }
+    }
+
+    #[test]
+    fn test_calc_neighbours() {
+        let expected = vec![
+            vec![2,2,1,2],
+            vec![2,3,1,2],
+            vec![1,1,0,1],
+            vec![2,2,1,1],
+        ];
+        let mock = make_test_state();
+        let result = mock.calc_neighbours();
+        dbg!(&result);
+        assert_eq!(result, expected);
     }
 }
