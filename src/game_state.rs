@@ -1,17 +1,17 @@
 pub struct GameState {
-    pub field: Vec<Vec<usize>>
+    pub field: Vec<Vec<u8>>
 }
 
 impl GameState {
     /// initialize a limited playing field of 10 by 10 empty spaces.
     pub fn init() -> GameState{
-        return GameState {
+        GameState {
             field: vec![vec![0; 10];10]
         }
     }
 
     pub fn init_glider() -> GameState {
-        return GameState {
+        GameState {
             field: vec![
                 vec![0; 10],
                 vec![0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -38,7 +38,7 @@ impl GameState {
                 rnd_vec[i][j] = rnd;
             }
         }
-        return GameState {
+        GameState {
             field: rnd_vec
         }
     }
@@ -46,9 +46,9 @@ impl GameState {
     /// Calculate future value of each cell and assign
     /// new value to field of GameState.
     /// Rules:
-    /// 2 Neighbours -> toggle state
-    /// 1 Neighbours -> stay the same
-    /// 0 Neighbours -> become 0
+    /// <2 or >3 neighbours: become 0,
+    /// 3 Neighbours: become 1,
+    /// 2 Neighbours: stay the same
     pub fn update(&mut self) {
         
         // calculate amount of neighbours
