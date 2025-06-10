@@ -3,11 +3,9 @@ pub struct GameState {
 }
 
 impl GameState {
-    /// initialize a limited playing field of 10 by 10 empty spaces.
-    
-
+    /// Takes a field of Vec<Vec<u8>> and creates a GameState from it.
     pub fn from_field(field: Vec<Vec<u8>>) -> Self {
-        GameState { field: field }
+        GameState { field }
     }
 
     /// Calculate future value of each cell and assign
@@ -63,22 +61,6 @@ impl GameState {
         }
         // print!("nbrs: {:?}", cell_neighbours);
         cell_neighbours
-    }
-
-    /// prints the current game state field vector using "██" and "  ".
-    pub fn print(&self) {
-        print!("\x1b[H"); // move cursor to top left
-        for row in &self.field {
-            for &cell in row {
-                let symbol = if cell == 1 {
-                    "██"
-                } else {
-                    "  "
-                    };
-                print!("{}", symbol);
-            }
-            println!();
-        }
     }
 }
 
