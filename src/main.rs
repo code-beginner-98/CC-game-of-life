@@ -7,13 +7,15 @@
 mod game_state;
 mod generators;
 mod app;
+use egui::Vec2;
 use game_state::GameState;
 use generators::generate_random;
 
 fn main() -> eframe::Result<()> {
     let app = app::App {
         state: GameState::from_field(generate_random(200)), // size of field vector, not visual field
-        paused:false,
+        paused: false,
+        pan_offset: Vec2 {x: 0f32, y:0f32,},
     };
 
     let native_options = eframe::NativeOptions::default();
