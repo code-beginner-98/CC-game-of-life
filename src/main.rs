@@ -16,6 +16,7 @@ fn main() -> eframe::Result<()> {
         state: GameState::from_field(generate_random(200)), // size of field vector, not visual field
         paused: false,
         pan_offset: Vec2 {x: 0f32, y:0f32,},
+        zoom: 1.0,
     };
 
     let native_options = eframe::NativeOptions::default();
