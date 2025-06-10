@@ -2,7 +2,7 @@ use std::{
     thread::sleep,
     time::{Duration, Instant},
 };
-use egui::{Color32, Painter, Rect, Response, Sense, Vec2, vec2};
+use egui::{vec2, Button, Color32, Painter, Rect, Response, Sense, Vec2};
 use crate::game_state::GameState;
 
 pub struct App {
@@ -21,7 +21,8 @@ impl eframe::App for App {
             // Here go all my UI elements
             // TODO: put labels + buttons in seperate widget
             ui.label("Welome to the Game of Life");
-            if ui.button("Pause / Resume").clicked() {
+            let button_state = if self.paused { "Resume"} else {"Pause"};
+            if ui.add(Button::new(button_state)).clicked() {
                 self.paused = !self.paused;
             }
 
@@ -46,7 +47,7 @@ impl eframe::App for App {
             let view_size = field_size/view_width as f32;
             for y in view_y..(view_y + view_height) {
                 for x in view_x..(view_x + view_width) {
-                    self.paint_cell(x, y, &response, &painter, view_size);
+                    self.paint_cell(x, y, &response, &painter, view_size); // extracted to down below, TODO: refactor
                 }
             }
         });
