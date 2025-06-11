@@ -41,7 +41,7 @@ async fn main() -> eframe::Result<()> {
             let refresh_rate = Duration::from_millis(match speed {
                 1 => 500,
                 2 => 250,
-                3 => 100,
+                3 => 100, 
                 4 => 40,
                 _ => 10,    
             });
