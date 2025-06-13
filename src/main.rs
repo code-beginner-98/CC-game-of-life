@@ -6,32 +6,61 @@
 // }
 mod game_state;
 mod generators;
-use std::{io, thread::sleep, time::Duration};
+mod app;
+use egui::Vec2;
 use game_state::GameState;
-use generators::{generate_empty, generate_glider, generate_random};
+use generators::generate_random;
+use std::time::{Duration, Instant};
+use std::sync::{Arc, Mutex};
 
-fn main() -> io::Result<()>{
-    print!("\x1B[2J\x1B[1;1H"); // clear screen once
-    print!("Welcome to the Game of Life, published by John Horton Conway in 1970.");
-    println!("What Starting Pattern would you like to see?\n
-        1: Simple Glider.\n
-        2: Random Pattern.");
-    let mut buffer = String::new();
-    io::stdin().read_line(&mut buffer)?;
-    let buf_str: Vec<char> = buffer.chars().collect();
-    let mut game = match buf_str[0] {
-        '1' => GameState::from_field(generate_glider()),
-        '2' => GameState::from_field(generate_random(10)),
-        _ => {
-            println!("Initiating Empty field...");
-            GameState::from_field(generate_empty(10))
-        }
+#[tokio::main]
+async fn main() -> eframe::Result<()> {
+    let game = Arc::new(Mutex::new(GameState::from_field(generate_random(200))));
+    let shared_speed = Arc::new(Mutex::new(2));
+    let shared_paused = Arc::new(Mutex::new(false));
+
+    let app = app::App {
+        shared_state: Arc::clone(&game), // size of field vector, not visual field
+        shared_paused: Arc::clone(&shared_paused),
+        pan_offset: Vec2 {x: 0f32, y:0f32,},
+        zoom: 1.0,
+        shared_speed: Arc::clone(&shared_speed),
     };
-    print!("\x1B[2J\x1B[1;1H"); // clear screen once
-    for _ in 0..100 {    
-        game.print();
-        sleep(Duration::from_millis(400));
-        game.update();
-    }
+    let native_options = eframe::NativeOptions::default();
+
+    // Game State Update Thread
+    let _computation_handle = tokio::task::spawn(async move {
+        // println!("running comp.");
+        let mut speed: u8 = 2;
+
+        loop {
+            let start = Instant::now();
+            if let Ok(speed_guard) = Arc::clone(&shared_speed).lock() {
+                let speed = *speed_guard;
+            }
+            let refresh_rate = Duration::from_millis(match speed {
+                1 => 500,
+                2 => 250,
+                3 => 100, 
+                4 => 40,
+                _ => 10,    
+            });
+            let passed = Instant::now() - start;
+            if passed < refresh_rate {
+                tokio::time::sleep(refresh_rate - passed).await;
+            }
+            // println!("updating game state.");
+            if let Ok(paused_guard) = Arc::clone(&shared_paused).lock() {
+                let paused = *paused_guard;
+                if !paused {
+                    Arc::clone(&game).lock().unwrap().update();
+                }
+            }
+            
+        }
+    });
+
+    eframe::run_native("Game of Life", native_options, Box::new(|_cc| Ok(Box::new(app)))).unwrap();
+    
     Ok(())
 }
