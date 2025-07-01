@@ -15,6 +15,7 @@ use std::sync::{Arc, Mutex};
 
 #[tokio::main]
 async fn main() -> eframe::Result<()> {
+
     let game = Arc::new(Mutex::new(GameState::from_field(generate_random(200))));
     let shared_speed = Arc::new(Mutex::new(2));
     let shared_paused = Arc::new(Mutex::new(false));
@@ -35,8 +36,9 @@ async fn main() -> eframe::Result<()> {
 
         loop {
             let start = Instant::now();
+
             if let Ok(speed_guard) = Arc::clone(&shared_speed).lock() {
-                let speed = *speed_guard;
+                speed = *speed_guard;
             }
             let refresh_rate = Duration::from_millis(match speed {
                 1 => 500,
@@ -50,17 +52,18 @@ async fn main() -> eframe::Result<()> {
                 tokio::time::sleep(refresh_rate - passed).await;
             }
             // println!("updating game state.");
+            let mut paused = false;
             if let Ok(paused_guard) = Arc::clone(&shared_paused).lock() {
-                let paused = *paused_guard;
-                if !paused {
-                    Arc::clone(&game).lock().unwrap().update();
-                }
+                paused = *paused_guard;
+            }
+            if !paused {
+                Arc::clone(&game).lock().unwrap().update();
             }
             
         }
     });
 
-    eframe::run_native("Game of Life", native_options, Box::new(|_cc| Ok(Box::new(app)))).unwrap();
+    eframe::run_native("Game of Life", native_options, Box::new(|_cc| Ok(Box::new(app))))?;
     
     Ok(())
 }
