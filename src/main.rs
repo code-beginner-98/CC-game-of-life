@@ -7,7 +7,7 @@
 mod game_state;
 mod generators;
 mod app;
-use egui::Vec2;
+use egui::{Vec2, ViewportBuilder};
 use game_state::GameState;
 use generators::generate_random;
 use std::time::{Duration, Instant};
@@ -26,8 +26,13 @@ async fn main() -> eframe::Result<()> {
         pan_offset: Vec2 {x: 0f32, y:0f32,},
         zoom: 1.0,
         shared_speed: Arc::clone(&shared_speed),
+        window_height: None
     };
-    let native_options = eframe::NativeOptions::default();
+
+    let native_options = eframe::NativeOptions {
+        viewport: ViewportBuilder::default().with_maximized(true),
+        ..Default::default()
+    };
 
     // Game State Update Thread
     let _computation_handle = tokio::task::spawn(async move {
@@ -63,7 +68,7 @@ async fn main() -> eframe::Result<()> {
         }
     });
 
-    eframe::run_native("Game of Life", native_options, Box::new(|_cc| Ok(Box::new(app))))?;
+    eframe::run_native("Game of Life", native_options, Box::new(|_cc| Ok(Box::new(app)))).unwrap();
     
     Ok(())
 }
