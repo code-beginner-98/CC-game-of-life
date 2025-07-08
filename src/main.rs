@@ -7,7 +7,7 @@
 mod game_state;
 mod generators;
 mod app;
-use egui::Vec2;
+use egui::{Vec2, ViewportBuilder};
 use game_state::GameState;
 use generators::generate_random;
 use std::time::{Duration, Instant};
@@ -15,6 +15,7 @@ use std::sync::{Arc, Mutex};
 
 #[tokio::main]
 async fn main() -> eframe::Result<()> {
+
     let game = Arc::new(Mutex::new(GameState::from_field(generate_random(200))));
     let shared_speed = Arc::new(Mutex::new(2));
     let shared_paused = Arc::new(Mutex::new(false));
@@ -25,8 +26,13 @@ async fn main() -> eframe::Result<()> {
         pan_offset: Vec2 {x: 0f32, y:0f32,},
         zoom: 1.0,
         shared_speed: Arc::clone(&shared_speed),
+        window_height: None
     };
-    let native_options = eframe::NativeOptions::default();
+
+    let native_options = eframe::NativeOptions {
+        viewport: ViewportBuilder::default().with_maximized(true),
+        ..Default::default()
+    };
 
     // Game State Update Thread
     let _computation_handle = tokio::task::spawn(async move {
@@ -35,8 +41,9 @@ async fn main() -> eframe::Result<()> {
 
         loop {
             let start = Instant::now();
+
             if let Ok(speed_guard) = Arc::clone(&shared_speed).lock() {
-                let speed = *speed_guard;
+                speed = *speed_guard;
             }
             let refresh_rate = Duration::from_millis(match speed {
                 1 => 500,
@@ -50,11 +57,12 @@ async fn main() -> eframe::Result<()> {
                 tokio::time::sleep(refresh_rate - passed).await;
             }
             // println!("updating game state.");
+            let mut paused = false;
             if let Ok(paused_guard) = Arc::clone(&shared_paused).lock() {
-                let paused = *paused_guard;
-                if !paused {
-                    Arc::clone(&game).lock().unwrap().update();
-                }
+                paused = *paused_guard;
+            }
+            if !paused {
+                Arc::clone(&game).lock().unwrap().update();
             }
             
         }

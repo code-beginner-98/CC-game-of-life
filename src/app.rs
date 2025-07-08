@@ -1,7 +1,7 @@
 use std::{
     sync::{Arc, Mutex},
 };
-use egui::{Button, Color32, Pos2, Rect, Sense, Slider, Vec2};
+use egui::{response, Button, Color32, Pos2, Rect, Sense, Slider, Vec2};
 use crate::game_state::GameState;
 
 pub struct App {
@@ -10,6 +10,7 @@ pub struct App {
     pub pan_offset: Vec2,
     pub zoom: f32,
     pub shared_speed: Arc<Mutex<u8>>,
+    pub window_height: Option<f32>
 }
 
 // Going with egui/eframe might be the worst mistake I will make in a long time due
@@ -26,26 +27,40 @@ impl eframe::App for App {
             (state.field.len(), state.field[0].len())
         };
 
-        egui::CentralPanel::default().show(ctx, |ui| {
+        // sets window position to be offset to application window bottom-left by 2.5% of window height.
+        let screen_height = ctx.available_rect().height();
+        let settings_window_height = self.window_height.unwrap_or(screen_height);
+        let left_border_to_screen_left = screen_height * 0.025;
+        let top_border_to_screen_bottom = screen_height * 0.975 - settings_window_height;
+        let settings_window_position_fixed = Pos2::new(left_border_to_screen_left, top_border_to_screen_bottom);
+
+        let settings_window = egui::Window::new("Settings")
+            .fixed_pos(settings_window_position_fixed)
+            .show(ctx, |ui| {
+                if let Ok(mut speed) = self.shared_speed.lock() {
+                    ui.add(Slider::new(&mut *speed, 1..=5).text("Simulation Speed"));
+                }
+                if let Ok(mut paused) = self.shared_paused.lock() {
+                    let button_state = if *paused { "Resume"} else {"Pause"};
+                    if ui.add(Button::new(button_state)).clicked() {
+                        *paused = !*paused;
+                    }
+                }
+                ui.label(format!("Zoom: {}", self.zoom));
+            });
+            
+            // stores height for future use.
+            self.window_height = settings_window.map(|response| response.response.rect.height());
+
+        egui::CentralPanel::default()
+            .show(ctx, |ui| {
             // Here go all my UI elements
             // TODO: put labels + buttons in seperate widget
-            ui.label("Welome to the Game of Life");
-            if let Ok(mut paused) = self.shared_paused.lock() {
-                let button_state = if *paused { "Resume"} else {"Pause"};
-                if ui.add(Button::new(button_state)).clicked() {
-                    *paused = !*paused;
-                }
-            }
-            
-            // TODO: add slider for game speed: 5 speeds, refresh rate = 0.5s, 0.25s, 0.1s, 0.04s, 0.01s
-            if let Ok(mut speed) = self.shared_speed.lock() {
-                ui.add(Slider::new(&mut *speed, 1..=5).text("Simulation Speed"));
-            }
-            ui.label(format!("Zoom: {}", self.zoom));
+            ui.label("Conway's Game of Life");
 
-            // playing field
+            // Playing field
             let field_size = 1000f32; // TODO: make as big as window (resizing)
-            let cell_size = 50f32*self.zoom; // panel, TODO: adjusted by scrolling
+            let cell_size = 50f32 * self.zoom; // panel, TODO: adjusted by scrolling
             let (response, painter) = ui.allocate_painter(
                 Vec2::new(field_size, field_size),
                 Sense::click_and_drag());
@@ -62,12 +77,12 @@ impl eframe::App for App {
             if self.pan_offset.y > 0.0 {self.pan_offset.y = 0.0};
             if self.pan_offset.x < ((field_width as f32) * cell_size - field_size)*-1.0 {self.pan_offset.x = ((field_width as f32) * cell_size - field_size)*-1.0}; // TODO: rewrite this crap.
             if self.pan_offset.y < ((field_height as f32) * cell_size - field_size)*-1.0 {self.pan_offset.y = ((field_width as f32) * cell_size - field_size)*-1.0}; // TODO: rewrite this crap.
-            // ui.label(format!("Scene rect: {:#?}", &mut self.pan_offset));
 
             let cell_vec = Vec2::new(cell_size, cell_size);
             let top = if ((self.pan_offset.y * -1f32 / cell_size) as i32) < 0 {0} else {(self.pan_offset.y * -1f32 / cell_size) as usize}; // TODO: Rewrite as closure maybe?
             let left = if ((self.pan_offset.x * -1f32 / cell_size) as i32) < 0 {0} else {(self.pan_offset.x * -1f32 / cell_size) as usize}; // TODO: Rewrite as closure maybe?
-            // TODO: add zooming - make range depend on zoomfactor
+
+            // Paint cells
             if let Ok(state) = self.shared_state.lock() {
                 for (ind_y, y) in (top..top+((field_size/cell_size) as usize)).into_iter().enumerate() {
                     for (ind_x, x) in (left..left+((field_size/cell_size) as usize)).into_iter().enumerate() {
