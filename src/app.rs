@@ -1,7 +1,8 @@
+use core::fmt;
 use std::{
-    sync::{Arc, Mutex},
+    fmt::format, sync::{Arc, Mutex}
 };
-use egui::{response, Button, Color32, Pos2, Rect, Sense, Slider, Vec2};
+use egui::{Button, Color32, Frame, Pos2, Rect, Sense, Slider, Vec2};
 use crate::game_state::GameState;
 
 pub struct App {
@@ -19,8 +20,6 @@ pub struct App {
 // egui has it. It's a learning process, people, deal with it.
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        // println!("updating ui.");
-
         // reads out temporary values so the state doesn't lock forever.
         let (field_width, field_height) = {
             let state = self.shared_state.lock().unwrap();
@@ -47,45 +46,50 @@ impl eframe::App for App {
                     }
                 }
                 ui.label(format!("Zoom: {}", self.zoom));
-            });
+        });
             
-            // stores height for future use.
-            self.window_height = settings_window.map(|response| response.response.rect.height());
+        // stores height for future use.
+        self.window_height = settings_window.map(|response| response.response.rect.height());
 
         egui::CentralPanel::default()
+            .frame(Frame {
+                fill: Color32::WHITE,
+                ..Default::default()
+            })
             .show(ctx, |ui| {
             // Here go all my UI elements
-            // TODO: put labels + buttons in seperate widget
-            ui.label("Conway's Game of Life");
 
             // Playing field
-            let field_size = 1000f32; // TODO: make as big as window (resizing)
-            let cell_size = 50f32 * self.zoom; // panel, TODO: adjusted by scrolling
+            let panel_size_width = ctx.available_rect().width();
+            let panel_size_height = ctx.available_rect().height();
             let (response, painter) = ui.allocate_painter(
-                Vec2::new(field_size, field_size),
+                Vec2::new(panel_size_width, panel_size_height),
                 Sense::click_and_drag());
 
             // Zoom
+            let cell_size_standard = 10f32;
             self.zoom *= ctx.input(|i|i.zoom_delta());
-            if self.zoom < field_size / 50.0 / field_width as f32 {
-                self.zoom = field_size / 50.0 / field_width as f32;
+            let min_zoom = (panel_size_height / field_height as f32 / cell_size_standard).max(panel_size_width / field_width as f32 / cell_size_standard);
+            if self.zoom < min_zoom {
+                self.zoom = min_zoom;
             }
 
             // Panning
+            let cell_size = cell_size_standard * self.zoom;
             self.pan_offset += response.drag_delta();
             if self.pan_offset.x > 0.0 {self.pan_offset.x = 0.0};
             if self.pan_offset.y > 0.0 {self.pan_offset.y = 0.0};
-            if self.pan_offset.x < ((field_width as f32) * cell_size - field_size)*-1.0 {self.pan_offset.x = ((field_width as f32) * cell_size - field_size)*-1.0}; // TODO: rewrite this crap.
-            if self.pan_offset.y < ((field_height as f32) * cell_size - field_size)*-1.0 {self.pan_offset.y = ((field_width as f32) * cell_size - field_size)*-1.0}; // TODO: rewrite this crap.
+            self.pan_offset.x = self.pan_offset.x.max((field_width as f32 *cell_size - panel_size_width) * - 1.0);
+            self.pan_offset.y = self.pan_offset.y.max((field_height as f32 * cell_size - panel_size_height) * -1.0);
 
-            let cell_vec = Vec2::new(cell_size, cell_size);
-            let top = if ((self.pan_offset.y * -1f32 / cell_size) as i32) < 0 {0} else {(self.pan_offset.y * -1f32 / cell_size) as usize}; // TODO: Rewrite as closure maybe?
-            let left = if ((self.pan_offset.x * -1f32 / cell_size) as i32) < 0 {0} else {(self.pan_offset.x * -1f32 / cell_size) as usize}; // TODO: Rewrite as closure maybe?
+            let cell_vec = Vec2::new(cell_size, cell_size); // area that one cell occupies
+            let top = 0.0f32.max(self.pan_offset.y * -1f32 / cell_size) as usize;
+            let left = 0.0f32.max(self.pan_offset.x * -1f32 / cell_size) as usize;
 
             // Paint cells
             if let Ok(state) = self.shared_state.lock() {
-                for (ind_y, y) in (top..top+((field_size/cell_size) as usize)).into_iter().enumerate() {
-                    for (ind_x, x) in (left..left+((field_size/cell_size) as usize)).into_iter().enumerate() {
+                for (ind_y, y) in (top..top+((panel_size_height/cell_size) as usize)).into_iter().enumerate() {
+                    for (ind_x, x) in (left..left+((panel_size_width/cell_size) as usize)).into_iter().enumerate() {
                         let cell_pos = Pos2::new(ind_x as f32 * cell_size, ind_y as f32 * cell_size);
                         if state.field[x][y] == 1 {
                             painter.rect_filled(Rect::from_min_size(cell_pos, cell_vec), 0.0, Color32::BLACK);
